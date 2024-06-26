@@ -1,0 +1,38 @@
+//TEDBH738 JOB 'TEDB,4510,PR32','A999036',MSGCLASS=Z,SCHENV=BACKUP
+//JOBLIB   DD DSN=MX.BIBGERAL,DISP=SHR
+//         DD DSN=SYS1.CEE.SCEERUN,DISP=SHR
+//STEP01   EXEC PGM=PLAN0016,
+//       PARM='ICETOOL'
+//*
+//* ***    **********************************************************
+//* ***    MONTA BACKUP DOS ARQUIVOS ENVIO TEDB
+//* ***    **********************************************************
+//*
+//INTRDR   DD *
+MX.CTMR.PR32.INTRDR
+//CARTAO   DD *
+B BKP 01 MX.BIBGERAL ZAN01FGDEANYLOCAL S113752            C=VTSLG
+1        DSN=MX.TEDB.JC730S02.TEDB0036                              3000
+2        DSN=MX.TEDB.S113752.JC730S02.TEDB0036
+1        DSN=MX.TEDB.JC730S07.SAIDAOK                               3000
+2        DSN=MX.TEDB.S113752.JC730S07.SAIDAOK
+1        DSN=MX.TEDB.JC730S07.SAIDANOK                              3000
+2        DSN=MX.TEDB.S113752.JC730S07.SAIDANOK
+1        DSN=MX.TEDB.JC732S03.ARQENVIO                              3000
+2        DSN=MX.TEDB.S113752.JC732S03.ARQENVIO
+//* NOVO
+1        DSN=MX.TEDB.JC730S7A.TEDB0035                              3000
+2        DSN=MX.TEDB.S113752.JC730S7A.TEDB0035
+1        DSN=MX.TEDB.JC730S7A.SDATAREF                              3000
+2        DSN=MX.TEDB.S113752.JC730S7A.SDATAREF
+1        DSN=MX.TEDB.JC730S7B.TEDB0035                              3000
+2        DSN=MX.TEDB.S113752.JC730S7B.TEDB0035
+1        DSN=MX.TEDB.JC730S7D.SARQT035                              3000
+2        DSN=MX.TEDB.S113752.JC730S7D.SARQT035
+1        DSN=MX.TEDB.JC730S7E.SAIDAOK                               3000
+2        DSN=MX.TEDB.S113752.JC730S7E.SAIDAOK
+1        DSN=MX.TEDB.JC730S7E.SAIDANOK                              3000
+2        DSN=MX.TEDB.S113752.JC730S7E.SAIDANOK
+//*
+//SYSOUT   DD SYSOUT=*
+//SYSUDUMP DD SYSOUT=Y
