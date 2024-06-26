@@ -1,0 +1,190 @@
+//TEDBC732 JOB 'TEDB,4510,PR32','A999036',MSGCLASS=Z,SCHENV=BATCH
+//OUT1     OUTPUT JESDS=ALL,DEST=ANYLOCAL
+//OUTE     OUTPUT DEST=ANYLOCAL,CLASS=E
+//OUTF     OUTPUT DEST=ANYLOCAL,CLASS=F
+//OUTG     OUTPUT DEST=ANYLOCAL,CLASS=G
+//OUTJ     OUTPUT DEST=ANYLOCAL,CLASS=J
+//OUTM     OUTPUT DEST=ANYLOCAL,CLASS=M
+//OUTN     OUTPUT DEST=ALNJE01,CLASS=N
+//OUTO     OUTPUT DEST=ANYLOCAL,CLASS=O
+//OUTP     OUTPUT DEST=ALNJE01,CLASS=P
+//OUTQ     OUTPUT DEST=ALNJE01,CLASS=Q
+//OUTR     OUTPUT DEST=ALNJE01,CLASS=R
+//OUTRR    OUTPUT DEST=ANYLOCAL,CLASS=R
+//OUTV     OUTPUT DEST=ANYLOCAL,CLASS=V
+//OUTW     OUTPUT DEST=ALNJE02,CLASS=W
+//OUT5     OUTPUT DEST=ALNJE02,CLASS=5
+//OUTZ     OUTPUT DEST=ANYLOCAL,CLASS=Z
+//*
+//* ***    %%LIBSYM MJ.EVTA.PRV.CAFORM %%MEMSYM OUTSYUC
+//* ***    %%LIBSYM MJ.EVTA.PRV.CAFORM %%MEMSYM OUTSYUD
+//*
+//JOBLIB   DD DSN=MX.BIBGERAL,DISP=SHR
+//         DD DSN=DB2M1.R2.DSNLOAD,DISP=SHR
+//         DD DSN=SYS1.CEE.SCEERUN,DISP=SHR
+//STEP01   EXEC SORTD
+//*
+//* ***    **********************************************************
+//* ***    ORDENA ARQUIVO POR BANCO DE ORIGEM, AGENCIA, RAZAO E CONTA
+//* ***    E BANCO DE DESTINO, AGENCIA, RAZAO E CONTA.
+//* ***    **********************************************************
+//*
+//SORTIN   DD DSN=MX.TEDB.JC730S11.MVDEBATU(0),
+//       DISP=SHR
+//SORTOUT  DD DSN=MX.TEDB.JC732S01.SORT01(+1),
+//       DISP=(,CATLG,DELETE),
+//       UNIT=DISCO,
+//       SPACE=(TRK,(040000,9000),RLSE),
+//       DCB=(MX.A,LRECL=0400,RECFM=FB)
+//SYSIN    DD *
+  SORT FIELDS=(01,03,PD,A,04,05,PD,A,22,04,PD,A,09,13,PD,A,
+              107,03,PD,A,110,05,PD,A,128,04,PD,A,115,13,PD,A)
+  END
+//*
+//STEP02   EXEC PGM=TEDB280F,
+//       PARM='00000000'
+//*
+//* ***    **********************************************************
+//* ***    MONTA SYSIN PARA OBTER A DATA DA INCLUSAO DO MOVIMENTO EM
+//* ***    D-1 UTIL PARA FORMATAR NOS REGISTROS HEADER E DETALHES
+//* ***    FORMATO DO PARM: AAAAMMDD ONDE: A=ANO M=MES D=DIA
+//* ***    **********************************************************
+//*
+//* ***    **********************************************************
+//* ***    FORMATA ARQUIVO DO FDEB
+//* ***    **********************************************************
+//*
+//*
+//* ***    **********************************************************
+//* ***    FORMATA ARQUIVO DO FDEB
+//* ***    **********************************************************
+//*
+//COMTRAG  DD DSN=*.STEP01.SORT.SORTOUT,
+//       DISP=SHR
+//ARQDATAS DD DSN=MX.TEDB.JA135S00.TEDBD000(0),
+//       DISP=SHR
+//ARQENVIO DD DSN=MX.TEDB.JC732S02.ARQENVIO(+1),
+//       DISP=(,CATLG,DELETE),
+//       UNIT=(DISCO,30),
+//       SPACE=(TRK,(5000,2000),RLSE),
+//       DCB=(MX.A,LRECL=400,RECFM=FB),
+//       DATACLAS=PRODX37
+//ARQHEADR DD DSN=MX.TEDB.JC732S02.ARQHEADR(+1),
+//       DISP=(,CATLG,DELETE),
+//       UNIT=(DISCO,30),
+//       SPACE=(TRK,(1,0),RLSE),
+//       DCB=(MX.A,LRECL=400,RECFM=FB),
+//       DATACLAS=PRODX37
+//SYSPRINT DD SYSOUT=*
+//SYSOUT   DD SYSOUT=*
+//SYSUDUMP DD SYSOUT=Y
+//*
+//STEP03   EXEC SORTD
+//*
+//* ***    **********************************************************
+//* ***    CONCATENA HEADER E DETALHE
+//* ***    **********************************************************
+//*
+//SORTIN   DD DSN=*.STEP02.ARQHEADR,
+//       DISP=SHR
+//         DD DSN=*.STEP02.ARQENVIO,
+//       DISP=SHR
+//SORTOUT  DD DSN=MX.TEDB.JC732S03.ARQENVIO(+1),
+//       DISP=(,CATLG,DELETE),
+//       UNIT=DISCO,
+//       SPACE=(TRK,(5000,2000),RLSE),
+//       DCB=(MX.A,LRECL=400,RECFM=FB)
+//SYSIN    DD *
+ SORT FIELDS=COPY
+ END
+//*
+//STEP04   EXEC PGM=TEDB284R
+//*
+//* ***    **********************************************************
+//* ***    GERA RELATORIO DE ENVIADOS PARA PROCESSO DE ENVIO DE TEDS
+//* ***    PARA O CENTRALIZADOR
+//* ***    **********************************************************
+//*
+//EARQEXTR DD DSN=*.STEP01.SORT.SORTOUT,
+//       DISP=SHR
+//RELATEDB DD DSN=MX.TEDB.JC732S04.RELATEDB(+1),
+//       DISP=(,CATLG,DELETE),
+//       UNIT=DISCO,
+//       SPACE=(TRK,(040000,9000),RLSE),
+//       DCB=(MX.A,LRECL=0240,RECFM=FB)
+//SYSOUT   DD SYSOUT=*
+//SYSUDUMP DD SYSOUT=Y
+//*
+//STEP05   EXEC PGM=PLAN1970,
+//       PARM=01
+//*
+//* ***    **********************************************************
+//* ***    LISTA RELATORIO
+//* ***    **********************************************************
+//*
+//ENT00001 DD DSN=*.STEP04.RELATEDB,
+//       DISP=SHR
+//SAI00001 DD SYSOUT=%%FORM#SYUC,
+//       DCB=(LRECL=240,RECFM=FBA)
+//SYSOUT   DD SYSOUT=*
+//PRINTER  DD SYSOUT=*
+//SYSUDUMP DD SYSOUT=Y
+//*
+//STEP06   EXEC SORTD
+//*
+//* ***    **********************************************************
+//* ***    ORDENA ARQUIVO POR BANCO DE ORIGEM, AGENCIA, RAZAO E CONTA
+//* ***    E BANCO DE DESTINO, AGENCIA, RAZAO E CONTA.
+//* ***    **********************************************************
+//*
+//* ***    ARQUIVO DE SAIDA DOS DESPREZADOS APOS TEDB273F
+//*
+//SORTIN   DD DSN=MX.TEDB.JC730S07.SAIDANOK(0),
+//       DISP=SHR
+//* ***    MJ.TEDB.JC730S7E.SAIDANOK   NOVO SERá CONCATENADO
+//         DD DSN=MX.TEDB.JC730S7E.SAIDANOK(0),
+//       DISP=SHR
+//         DD DSN=MX.TEDB.JC730S11.MVDEBINC(0),
+//       DISP=SHR
+//SORTOUT  DD DSN=MX.TEDB.JC732S06.SORT01(+1),
+//       DISP=(,CATLG,DELETE),
+//       UNIT=DISCO,
+//       SPACE=(TRK,(040000,9000),RLSE),
+//       DCB=(MX.A,LRECL=0400,RECFM=FB)
+//SYSIN    DD *
+  SORT FIELDS=(01,03,PD,A,04,05,PD,A,22,04,PD,A,09,13,PD,A,
+              107,03,PD,A,110,05,PD,A,128,04,PD,A,115,13,PD,A)
+  END
+//*
+//STEP07   EXEC PGM=TEDB286R
+//*
+//* ***    **********************************************************
+//* ***    GERA RELATORIO DE DESPREZADOS NO PROCESSO DE ENVIO DE TEDS
+//* ***    PARA O CENTRALIZADOR
+//* ***    **********************************************************
+//*
+//EARQEXTR DD DSN=*.STEP06.SORT.SORTOUT,
+//       DISP=SHR
+//RELATEDB DD DSN=MX.TEDB.JC732S07.RELATEDB(+1),
+//       DISP=(,CATLG,DELETE),
+//       UNIT=DISCO,
+//       SPACE=(TRK,(040000,9000),RLSE),
+//       DCB=(MX.A,LRECL=0240,RECFM=FB)
+//SYSOUT   DD SYSOUT=*
+//SYSUDUMP DD SYSOUT=Y
+//*
+//STEP08   EXEC PGM=PLAN1970,
+//       PARM=01
+//*
+//* ***    **********************************************************
+//* ***    LISTA RELATORIO
+//* ***    **********************************************************
+//*
+//ENT00001 DD DSN=*.STEP07.RELATEDB,
+//       DISP=SHR
+//SAI00001 DD SYSOUT=%%FORM#SYUD,
+//       DCB=(LRECL=240,RECFM=FBA)
+//SYSOUT   DD SYSOUT=*
+//PRINTER  DD SYSOUT=*
+//SYSUDUMP DD SYSOUT=Y
+//*

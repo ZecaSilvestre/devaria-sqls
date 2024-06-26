@@ -1,0 +1,368 @@
+//TEDBC730 JOB 'TEDB,4510,PR32','A299565',MSGCLASS=Z,SCHENV=BATCH
+//JOBLIB   DD DSN=MX.BIBGERAL,DISP=SHR
+//         DD DSN=DB2M1.R2.DSNLOAD,DISP=SHR
+//         DD DSN=SYS1.CEE.SCEERUN,DISP=SHR
+//*
+//* ***    TEDB - NET DIARIA TEDBC730
+//*
+//* ***    SELECIONA TEDS RECEBIDAS E VERIFICA NO SCCE SE EH CONTA
+//* ***    FUNDEB=78 E GERA ARQUIVO APTO PARA ENVIO DO CENTRALIZADOR
+//*
+//STEP00   EXEC SORTD
+//*
+//* ***    RECEBE O ARQUIVO MJ.CDLC.PRP.CATATCTR
+//*
+//SORTIN   DD DSN=MJ.CDLC.PRP.CATATCTR(0),
+//       DISP=SHR
+//SORTOUT  DD DSN=MX.TEDB.JC730S00.CATATCTR(+1),
+//       DISP=(,CATLG,DELETE),
+//       UNIT=DISCO,
+//       SPACE=(TRK,(020000,8000),RLSE),
+//       DCB=(MX.A,LRECL=0300,RECFM=FB)
+//SYSIN    DD *
+  SORT FIELDS=COPY
+  END
+//*
+//* ***    **********************************************************
+//* ***    RETIRADO STEP01 COM HPU DA TEDBB000
+//* ***    ESSE HPU PASSOU A SER PROCESSADO NO JOB TEDBA135
+//* ***    **********************************************************
+//*
+//STEP02   EXEC PGM=TEDB270T,
+//*
+//* ***    **********************************************************
+//* ***    MONTA SYSIN PARA HPU COM ANO, MES E DIA INDICADOS
+//* ***    FORMATO DO PARM: AAAAMMDD ONDE: A=ANO M=MES D=DIA
+//* ***    OBS.: PARA UM REPROCESSO, DEVERA INFORMAR UMA DATA NO PARM
+//* ***    **********************************************************
+//*
+//       PARM='00000000'
+//EARQT000 DD DSN=MX.TEDB.JA135S00.TEDBD000(0),
+//       DISP=SHR
+//SARQT036 DD DSN=MX.TEDB.JC730S02.TEDB0036(+1),
+//       DISP=(,CATLG,DELETE),
+//       UNIT=DISCO,
+//       SPACE=(TRK,(020000,8000),RLSE),
+//       DCB=(MX.A)
+//SDATAREF DD DSN=MX.TEDB.JC730S02.SDATAREF(+1),
+//       DISP=(,CATLG,DELETE),
+//       UNIT=DISCO,
+//       SPACE=(TRK,(020000,8000),RLSE),
+//       DCB=(MX.A,LRECL=0100,RECFM=FB)
+//SYSOUT   DD SYSOUT=*
+//SYSUDUMP DD SYSOUT=Y
+//*
+//STEP03   EXEC DB2M1HPU
+//*
+//* ***    **********************************************************
+//* ***    BAIXA EM ARQUIVO SEQUENCIAL A TABELA:
+//* ***    (DB2PRD.THIST_TRNSF_RECBD) - TEDBB036
+//* ***    HPU TU
+//* ***    **********************************************************
+//*
+//SYSPUNCH DD DUMMY
+//SYSREC00 DD DSN=MX.TEDB.JC730S03.TEDB0036(+1),
+//       DISP=(,CATLG,DELETE),
+//       UNIT=DISCO,
+//       SPACE=(TRK,(020000,8000),RLSE),
+//       DCB=(MX.A)
+//SYSIN    DD DSN=*.STEP02.SARQT036,
+//       DISP=SHR
+//SYSOUT   DD SYSOUT=*
+//LISTING  DD SYSOUT=*
+//SYSTSPRT DD SYSOUT=*
+//SYSPRINT DD SYSOUT=*
+//SYSUDUMP DD SYSOUT=Y
+//SYSTSIN  DD DSN=DB2M1.R2.SYSIN(DSNTIAUS),
+//       DISP=SHR
+//*
+//STEP04   EXEC SORTD
+//*
+//* ***    **********************************************************
+//* ***    CLASSIFICA UNLOAD TABELA TEDB0036
+//* ***    **********************************************************
+//*
+//SORTIN   DD DSN=*.STEP03.HPU.SYSREC00,
+//       DISP=SHR
+//SORTOUT  DD DSN=MX.TEDB.JC730S04.SORTOUT(+1),
+//       DISP=(,CATLG,DELETE),
+//       UNIT=DISCO,
+//       SPACE=(TRK,(020000,8000),RLSE),
+//       DCB=(MX.A,LRECL=1723,RECFM=FB)
+//SYSIN    DD *
+  SORT FIELDS=(22,02,PD,A,25,03,PD,A,285,07,PD,A),FORMAT=BI
+  END
+//*
+//STEP05   EXEC SORTD
+//*
+//* ***    **********************************************************
+//* ***    CLASSIFICA ARQUIVO SCCE FUNDEB=78
+//* ***    **********************************************************
+//*
+//SORTIN   DD DSN=MJ.SCCE.PRP.SERV78B(0),
+//       DISP=SHR
+//SORTOUT  DD DSN=MX.TEDB.JC730S05.BACBA78(+1),
+//       DISP=(,CATLG,DELETE),
+//       UNIT=DISCO,
+//       SPACE=(TRK,(020000,8000),RLSE),
+//       DCB=(MX.A,LRECL=0050,RECFM=FB)
+//SYSIN    DD *
+  SORT FIELDS=(01,03,PD,A,04,04,PD,A),FORMAT=BI
+  SUM FIELDS=NONE
+  END
+//*
+//STEP5A   EXEC SORTD
+//*
+//* ***    **********************************************************
+//* ***    CLASSIFICA ARQUIVO SCCE FUNDEB=78
+//* ***    **********************************************************
+//*
+//SORTIN   DD DSN=MJ.SCCE.PRP.SERV78B(0),
+//       DISP=SHR
+//SORTOUT  DD DSN=MX.TEDB.JC730S5A.BACBA78(+1),
+//       DISP=(,CATLG,DELETE),
+//       UNIT=DISCO,
+//       SPACE=(TRK,(020000,8000),RLSE),
+//       DCB=(MX.A,LRECL=0050,RECFM=FB)
+//SYSIN    DD *
+  SORT FIELDS=(01,03,PD,A,04,04,PD,A),FORMAT=BI
+  SUM FIELDS=NONE
+  END
+//*
+//STEP06   EXEC PGM=TEDB272B
+//*
+//* ***    **********************************************************
+//* ***    BATE MOVTO DA TABELA TEDBB036 COM ARQUIVO SCCE PARA OBTER
+//* ***    CONTAS FUNDEB=78
+//* ***    **********************************************************
+//*
+//EARQT036 DD DSN=*.STEP04.SORT.SORTOUT,
+//       DISP=SHR
+//EARQWS78 DD DSN=*.STEP05.SORT.SORTOUT,
+//       DISP=SHR
+//SARQT036 DD DSN=MX.TEDB.JC730S06.SARQT036(+1),
+//       DISP=(,CATLG,DELETE),
+//       UNIT=DISCO,
+//       SPACE=(TRK,(020000,8000),RLSE),
+//       DCB=(MX.A,LRECL=1723,RECFM=FB)
+//SYSOUT   DD SYSOUT=*
+//SYSUDUMP DD SYSOUT=Y
+//*
+//STEP07   EXEC PGM=TEDB273F
+//*
+//* ***    **********************************************************
+//* ***    SEPARA REGISTRO(TEDB) EM ARQUIVO OK E NOK
+//* ***    **********************************************************
+//*
+//EARQT036 DD DSN=*.STEP06.SARQT036,
+//       DISP=SHR
+//SSAIDAOK DD DSN=MX.TEDB.JC730S07.SAIDAOK(+1),
+//       DISP=(,CATLG,DELETE),
+//       UNIT=DISCO,
+//       SPACE=(TRK,(020000,8000),RLSE),
+//       DCB=(MX.A,LRECL=0400,RECFM=FB),
+//       DATACLAS=PRODX37
+//SSAIDNOK DD DSN=MX.TEDB.JC730S07.SAIDANOK(+1),
+//       DISP=(,CATLG,DELETE),
+//       UNIT=DISCO,
+//       SPACE=(TRK,(020000,8000),RLSE),
+//       DCB=(MX.A,LRECL=0400,RECFM=FB)
+//SYSOUT   DD SYSOUT=*
+//SYSUDUMP DD SYSOUT=Y
+//*
+//* ***    **********************************************************
+//* ***    INICIO PROCESSO DE ENVIO DA ENVIADAS PARA O CENTRALIZADOR
+//* ***    **********************************************************
+//*
+//STEP7A   EXEC PGM=TEDB290T,
+//       PARM='00000000'
+//*
+//* ***    **********************************************************
+//* ***    MONTA SYSIN PARA HPU COM ANO, MES E DIA INDICADOS
+//* ***    FORMATO DO PARM: AAAAMMDD ONDE: A=ANO M=MES D=DIA
+//* ***    OBS.: PARA UM REPROCESSO, DEVERA INFORMAR UMA DATA NO PARM
+//* ***    **********************************************************
+//*
+//EARQT000 DD DSN=MX.TEDB.JA135S00.TEDBD000(0),
+//       DISP=SHR
+//SARQT035 DD DSN=MX.TEDB.JC730S7A.TEDB0035(+1),
+//       DISP=(,CATLG,DELETE),
+//       UNIT=DISCO,
+//       SPACE=(TRK,(020000,8000),RLSE),
+//       DCB=(MX.A)
+//SDATAREF DD DSN=MX.TEDB.JC730S7A.SDATAREF(+1),
+//       DISP=(,CATLG,DELETE),
+//       UNIT=DISCO,
+//       SPACE=(TRK,(020000,8000),RLSE),
+//       DCB=(MX.A,LRECL=0100,RECFM=FB)
+//SYSOUT   DD SYSOUT=*
+//SYSUDUMP DD SYSOUT=Y
+//*
+//STEP7B   EXEC DB2M1HPU,
+//       DYNAMNBR=20
+//*
+//* ***    **********************************************************
+//* ***    BAIXA EM ARQUIVO SEQUENCIAL A TABELA:
+//* ***    (DB2PRD.THIST_TRNSF_ENVID) - TEDBB035
+//* ***    HPU TU
+//* ***    **********************************************************
+//*
+//SYSPUNCH DD DUMMY
+//SYSREC00 DD DSN=MX.TEDB.JC730S7B.TEDB0035(+1),
+//       DISP=(,CATLG,DELETE),
+//       UNIT=DISCO,
+//       SPACE=(TRK,(020000,8000),RLSE),
+//       DCB=(MX.A)
+//SYSIN    DD DSN=*.STEP7A.SARQT035,
+//       DISP=SHR
+//SYSOUT   DD SYSOUT=*
+//LISTING  DD SYSOUT=*
+//SYSTSPRT DD SYSOUT=*
+//SYSPRINT DD SYSOUT=*
+//SYSUDUMP DD SYSOUT=Y
+//*
+//STEP7C   EXEC SORTD
+//*
+//* ***    **********************************************************
+//* ***    CLASSIFICA UNLOAD TABELA TEDB0035
+//* ***    **********************************************************
+//*
+//SORTIN   DD DSN=*.STEP7B.HPU.SYSREC00,
+//       DISP=SHR
+//SORTOUT  DD DSN=MX.TEDB.JC730S7C.SORTOUT(+1),
+//       DISP=(,CATLG,DELETE),
+//       UNIT=DISCO,
+//       SPACE=(TRK,(020000,8000),RLSE),
+//       DCB=(MX.A,LRECL=2166,RECFM=FB)
+//SYSIN    DD *
+  SORT FIELDS=(17,02,PD,A,20,03,PD,A,47,07,PD,A),FORMAT=BI
+  END
+//*
+//STEP7D   EXEC PGM=TEDB292B
+//*
+//* ***    **********************************************************
+//* ***    BATE MOVTO DA TABELA TEDBB035 COM ARQUIVO SCCE PARA OBTER
+//* ***    CONTAS FUNDEB=78
+//* ***    **********************************************************
+//*
+//EARQT035 DD DSN=*.STEP7C.SORT.SORTOUT,
+//       DISP=SHR
+//EARQWS78 DD DSN=*.STEP5A.SORT.SORTOUT,
+//       DISP=SHR
+//SARQT035 DD DSN=MX.TEDB.JC730S7D.SARQT035(+1),
+//       DISP=(,CATLG,DELETE),
+//       UNIT=DISCO,
+//       SPACE=(TRK,(020000,8000),RLSE),
+//       DCB=(MX.A,LRECL=2166,RECFM=FB)
+//SYSOUT   DD SYSOUT=*
+//SYSUDUMP DD SYSOUT=Y
+//*
+//STEP7E   EXEC PGM=TEDB294F
+//*
+//* ***    **********************************************************
+//* ***    SEPARA REGISTRO(TEDB) EM ARQUIVO OK E NOK
+//* ***    **********************************************************
+//*
+//EARQT035 DD DSN=*.STEP7D.SARQT035,
+//       DISP=SHR
+//SSAIDAOK DD DSN=MX.TEDB.JC730S7E.SAIDAOK(+1),
+//       DISP=(,CATLG,DELETE),
+//       UNIT=DISCO,
+//       SPACE=(TRK,(020000,8000),RLSE),
+//       DCB=(MX.A,LRECL=0400,RECFM=FB),
+//       DATACLAS=PRODX37
+//SSAIDNOK DD DSN=MX.TEDB.JC730S7E.SAIDANOK(+1),
+//       DISP=(,CATLG,DELETE),
+//       UNIT=DISCO,
+//       SPACE=(TRK,(020000,8000),RLSE),
+//       DCB=(MX.A,LRECL=0400,RECFM=FB)
+//SYSOUT   DD SYSOUT=*
+//SYSUDUMP DD SYSOUT=Y
+//*
+//* ***    **********************************************************
+//* ***    FINAL PROCESSO DE ENVIO DA ENVIADAS PARA O CENTRALIZADOR
+//* ***    **********************************************************
+//*
+//STEP08   EXEC PGM=TEDB276F
+//*
+//* ***    **********************************************************
+//* ***    OBTER O CAMPO CODIGO DO LANCAMENTO NA TABELA
+//* ***    TEDBB023 ATRAVES DO CODIGO DA MENSAGEN E
+//* ***    FORMATA NO BOOK DE ENTRADA E GERA O ARQUIVO
+//* ***    DE SAIDA COM O MESMO LAYOU DE ENTRADA
+//* ***    **********************************************************
+//*
+//EARQEXTR DD DSN=*.STEP07.SSAIDAOK,
+//       DISP=SHR
+//* ***    *.STEP7E.SSAIDAOK
+//         DD DSN=*.STEP7E.SSAIDAOK,
+//       DISP=SHR
+//SARQEXTR DD DSN=MX.TEDB.JC730S08.SARQEXTR(+1),
+//       DISP=(,CATLG,DELETE),
+//       UNIT=DISCO,
+//       SPACE=(TRK,(040000,9000),RLSE),
+//       DCB=(MX.A,LRECL=0400,RECFM=FB)
+//SYSOUT   DD SYSOUT=*
+//SYSUDUMP DD SYSOUT=Y
+//*
+//STEP09   EXEC SORTD
+//*
+//* ***    **********************************************************
+//* ***    CLASSIFICA O ARQUIVO CDLC POR CODIGO BCO E CODIGO LCTO
+//* ***    **********************************************************
+//*
+//SORTIN   DD DSN=*.STEP00.SORT.SORTOUT,
+//       DISP=SHR
+//SORTOUT  DD DSN=MX.TEDB.JC730S09.SORTOUT(+1),
+//       DISP=(,CATLG,DELETE),
+//       UNIT=DISCO,
+//       SPACE=(TRK,(020000,8000),RLSE),
+//       DCB=(MX.A,LRECL=0300,RECFM=FB)
+//SYSIN    DD *
+  SORT FIELDS=(003,3,PD,A),FORMAT=BI
+//*SORT FIELDS=(001,2,PD,A,003,3,PD,A),FORMAT=BI
+  END
+//*
+//STEP10   EXEC SORTD
+//*
+//* ***    **********************************************************
+//* ***    CLASSIFICA O ARQUIVO COM OS MOVIMENTOS FUNDEB
+//* ***    POR CODIGO BCO E CODIGO LCTO
+//* ***    **********************************************************
+//*
+//SORTIN   DD DSN=*.STEP08.SARQEXTR,
+//       DISP=SHR
+//SORTOUT  DD DSN=MX.TEDB.JC730S10.SORTOUT(+1),
+//       DISP=(,CATLG,DELETE),
+//       UNIT=DISCO,
+//       SPACE=(TRK,(020000,8000),RLSE),
+//       DCB=(MX.A,LRECL=0400,RECFM=FB)
+//SYSIN    DD *
+  SORT FIELDS=(359,5,A),FORMAT=BI
+//*SORT FIELDS=(107,3,A,359,5,A),FORMAT=BI
+  END
+//*
+//STEP11   EXEC PGM=TEDB274B
+//*
+//* ***    **********************************************************
+//* ***    BALANCE LINE ENTRE O ARQUIVO DO CDLC E O ARQUIVO MOVIMENTO
+//* ***    FUNDEB PARA OBTER CODIGO CATEGORIA LANCAMENTO CNAB
+//* ***    **********************************************************
+//*
+//CDLCCPIE DD DSN=*.STEP09.SORT.SORTOUT,
+//       DISP=SHR
+//MVFUNDEB DD DSN=*.STEP10.SORT.SORTOUT,
+//       DISP=SHR
+//MVFUNATU DD DSN=MX.TEDB.JC730S11.MVDEBATU(+1),
+//       DISP=(,CATLG,DELETE),
+//       UNIT=DISCO,
+//       SPACE=(TRK,(020000,8000),RLSE),
+//       DCB=(MX.A,LRECL=0400,RECFM=FB)
+//MVFUNINC DD DSN=MX.TEDB.JC730S11.MVDEBINC(+1),
+//       DISP=(,CATLG,DELETE),
+//       UNIT=DISCO,
+//       SPACE=(TRK,(020000,8000),RLSE),
+//       DCB=(MX.A,LRECL=0400,RECFM=FB)
+//SYSOUT   DD SYSOUT=*
+//SYSUDUMP DD SYSOUT=Y
+//*
